@@ -1,0 +1,46 @@
+spring:
+  ai:
+    dashscope:
+      agent:
+        api-key:
+  application:
+    name: ai-passage-creator
+  session:
+    store-type: redis
+    # session 30 ???
+    timeout: 2592000
+    # Redis ??
+  data:
+    redis:
+      host: 47.95.35.178
+      port: 6379
+      database: 0
+      password: E628L1..3K220
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://47.95.35.178:3306/ai_passage_creator
+    username: root
+    password: e628L1..3K220
+server:
+  port: 8567
+  servlet:
+    context-path: /api
+    session:
+      cookie:
+        max-age: 2592000
+
+# springdoc-openapi ??
+springdoc:
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.wfh.aipassagecreator.controller
+# knife4j ??????
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+  mybatis-flex:
+    configuration:
+      map-underscore-to-camel-case: false
