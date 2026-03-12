@@ -1,7 +1,13 @@
 package com.wfh.aipassagecreator.config;
 
+import com.wfh.aipassagecreator.common.ErrorCode;
+import com.wfh.aipassagecreator.exception.BusinessException;
+import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -11,6 +17,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.HandlerExceptionResolver;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @Title: SecurityConfig
@@ -29,6 +42,10 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    @Resource
+    @Qualifier("handlerExceptionResolver")
+    private HandlerExceptionResolver resolver;
+
     @Bean
     public SecurityContextRepository securityContextRepository() {
         return new HttpSessionSecurityContextRepository();
@@ -43,6 +60,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 放行登录注册接口
                         .requestMatchers("/user/login", "/user/register").permitAll()
+                        .requestMatchers("/api/doc.html", "/doc.html", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/webjars/**").permitAll()
                         // 放行健康检查接口
                         .requestMatchers("/health").permitAll()
                         // 其他请求需要认证
@@ -52,18 +70,41 @@ public class SecurityConfig {
                 .securityContext(securityContext -> securityContext
                         .securityContextRepository(securityContextRepository())
                 )
-                // 配置表单登录（可选，用于测试）
-                .formLogin(form -> form
-                        .loginPage("/user/login")
-                        .permitAll()
-                )
                 // 配置登出
                 .logout(logout -> logout
                         .logoutUrl("/user/logout")
                         .logoutSuccessUrl("/user/login")
                         .permitAll()
-                );
+                )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            resolver.resolveException(request, response, null, new BusinessException(ErrorCode.NOT_LOGIN_ERROR));
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            resolver.resolveException(request, response, null, new BusinessException(ErrorCode.NO_AUTH_ERROR));
+                        })
+                )
+                .csrf(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable);
 
         return http.build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }

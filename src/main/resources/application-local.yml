@@ -1,8 +1,7 @@
 spring:
   ai:
     dashscope:
-      agent:
-        api-key:
+      api-key: sk-103012fb32ea4b2e899e8b31eb86d5d8
   application:
     name: ai-passage-creator
   session:
@@ -37,10 +36,17 @@ springdoc:
       packages-to-scan: com.wfh.aipassagecreator.controller
 # knife4j ??????
 knife4j:
-  enable: true
+  enable: false
   setting:
     language: zh_cn
 
-  mybatis-flex:
-    configuration:
-      map-underscore-to-camel-case: false
+mybatis-flex:
+  configuration:
+    map-underscore-to-camel-case: false
+
+rustfs:
+  client:
+    endpoint: https://oss.intellidraw.top # API访问地址
+    access-key: drawio # 访问密钥
+    acess-secret: 12345678 # 密钥密码
+    bucket-name: drawio # 创建的桶名称
