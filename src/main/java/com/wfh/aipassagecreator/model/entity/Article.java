@@ -35,6 +35,12 @@ public class Article implements Serializable {
     private String taskId;
 
     /**
+     * 文章风格（可选）
+     */
+    private String style;
+
+
+    /**
      * 用户ID
      */
     private Long userId;

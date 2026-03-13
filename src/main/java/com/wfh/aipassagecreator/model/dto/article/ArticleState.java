@@ -14,6 +14,16 @@ public class ArticleState implements Serializable {
     private String taskId;
 
     /**
+     * 文章风格：tech/emotional/educational/humorous
+     */
+    private String style;
+
+    /**
+     * 允许的配图方式
+     */
+    private List<String> enabledImageMethods;
+
+    /**
      * 选题
      */
     private String topic;
@@ -82,16 +92,20 @@ public class ArticleState implements Serializable {
         private List<String> points;
     }
 
-    /**
-     * 配图需求
-     */
     @Data
     public static class ImageRequirement implements Serializable {
         private Integer position;
         private String type;
         private String sectionTitle;
         private String keywords;
+        private String imageSource;
+        private String prompt;
+        /**
+         * 占位符ID，用于在正文中定位插入位置，格式：{{IMAGE_PLACEHOLDER_N}}
+         */
+        private String placeholderId;
     }
+
 
     /**
      * 配图结果
@@ -104,5 +118,25 @@ public class ArticleState implements Serializable {
         private String keywords;
         private String sectionTitle;
         private String description;
+        /**
+         * 占位符ID，用于在正文中定位插入位置，格式：{{IMAGE_PLACEHOLDER_N}}
+         */
+        private String placeholderId;
     }
+
+    /**
+     * 智能体4返回结果（包含带占位符的正文和配图需求列表）
+     */
+    @Data
+    public static class Agent4Result implements Serializable {
+        /**
+         * 包含占位符的正文内容
+         */
+        private String contentWithPlaceholders;
+        /**
+         * 配图需求列表
+         */
+        private List<ImageRequirement> imageRequirements;
+    }
+
 }

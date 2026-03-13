@@ -19,9 +19,10 @@ public class ArticleCreateRequest implements Serializable {
     private String topic;
 
     /**
-     * 文章风格：tech/emotional/educational/humorous，可为空
+     * 文章风格（可选）
      */
     private String style;
+
 
     /**
      * 允许的配图方式列表（为空或 null 表示支持所有方式）

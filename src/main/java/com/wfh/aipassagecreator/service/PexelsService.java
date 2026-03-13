@@ -25,7 +25,7 @@ import static com.wfh.aipassagecreator.constant.ArticleConstant.*;
  */
 @Slf4j
 @Service
-public class PexelsService implements ImageSerchService{
+public class PexelsService implements ImageSearchService {
 
     private final OkHttpClient httpClient = new OkHttpClient();
 

@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,7 +37,7 @@ public class ArticleAsyncService {
     private final Gson gson = new Gson();
 
     @Async("articleExecutor")
-    public void executeAritcleGen(String taskId, String topic){
+    public void executeAritcleGen(String taskId, String topic, String style, List<String> enabledImageMethods){
         log.info("异步任务开始, taskId = {}, topic = {}", taskId, topic);
         try {
 // 更新状态为处理中
@@ -46,8 +47,10 @@ public class ArticleAsyncService {
             ArticleState articleState = new ArticleState();
             articleState.setTaskId(taskId);
             articleState.setTopic(topic);
+            articleState.setStyle(style);
+            articleState.setEnabledImageMethods(enabledImageMethods);
             // 执行智能体编排，通过sse连接
-            articleAgentService.execute(articleState, message -> {
+                    articleAgentService.execute(articleState, message -> {
                 handleAgentMessage(taskId, message, articleState);
             });
             // 保存完整文章到数据库

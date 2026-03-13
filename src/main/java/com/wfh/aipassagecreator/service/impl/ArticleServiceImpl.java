@@ -6,6 +6,8 @@ import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.wfh.aipassagecreator.common.ErrorCode;
+import com.wfh.aipassagecreator.constant.UserConstant;
+import com.wfh.aipassagecreator.exception.BusinessException;
 import com.wfh.aipassagecreator.exception.ThrowUtils;
 import com.wfh.aipassagecreator.model.dto.article.ArticleQueryRequest;
 import com.wfh.aipassagecreator.model.dto.article.ArticleState;
@@ -15,10 +17,14 @@ import com.wfh.aipassagecreator.model.enums.ArticleStatusEnum;
 import com.wfh.aipassagecreator.model.vo.ArticleVO;
 import com.wfh.aipassagecreator.service.ArticleService;
 import com.wfh.aipassagecreator.mapper.ArticleMapper;
+import com.wfh.aipassagecreator.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.wfh.aipassagecreator.constant.UserConstant.ADMIN_ROLE;
 
@@ -33,9 +39,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article>
     implements ArticleService{
 
     private final Gson gson = new Gson();
+    private final UserService userService;
+
+    public ArticleServiceImpl(UserService userService) {
+        this.userService = userService;
+    }
 
     @Override
-    public String createArticleTask(String topic, User loginUser) {
+    public String createArticleTask(String topic, User loginUser, String style) {
         // 生成任务ID
         String taskId = IdUtil.simpleUUID();
 
@@ -138,7 +149,19 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article>
     }
 
     private Page<ArticleVO> convertToVOPage(Page<Article> articlePage) {
-        return null;
+        List<Article> records = articlePage.getRecords();
+        List<ArticleVO> list = records.stream().map(ArticleVO::objToVo).toList();
+        long pageNumber = articlePage.getPageNumber();
+        long pageSize = articlePage.getPageSize();
+        long totalPage = articlePage.getTotalPage();
+        long totalRow = articlePage.getTotalRow();
+        Page<ArticleVO> res = new Page<ArticleVO>();
+        res.setRecords(list);
+        res.setPageNumber(pageNumber);
+        res.setPageSize(pageSize);
+        res.setTotalPage(totalPage);
+        res.setTotalRow(totalRow);
+        return res;
     }
 
     @Override
@@ -154,12 +177,20 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article>
     }
 
     private void checkArticlePermission(Article article, User loginUser) {
-
+        Long userId = article.getUserId();
+        Long id = loginUser.getId();
+        if (!userId.equals(id) && !loginUser.getUserRole().equals(ADMIN_ROLE)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "无权限");
+        }
     }
 
     @Override
     public ArticleVO getArticleDetail(String taskId, User loginUser) {
-        return null;
+        Article article = this.getByTaskId(taskId);
+        checkArticlePermission(article, loginUser);
+        ArticleVO articleVO = ArticleVO.objToVo(article);
+        articleVO.setUserId(loginUser.getId());
+        return articleVO;
     }
 
 

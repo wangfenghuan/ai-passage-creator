@@ -16,7 +16,7 @@ import com.wfh.aipassagecreator.model.vo.ArticleVO;
 */
 public interface ArticleService extends IService<Article> {
 
-    String createArticleTask(String topic, User loginUser);
+    String createArticleTask(String topic, User loginUser, String style);
 
     Article getByTaskId(String taskId);
 
