@@ -152,11 +152,11 @@ public class ArticleVO implements Serializable {
         ArticleVO articleVO = new ArticleVO();
         BeanUtils.copyProperties(article, articleVO);
         Gson gson = new Gson();
-/*        // 转换 JSON 字段
+        // 转换 JSON 字段
         if (article.getTitleOptions() != null) {
             articleVO.setTitleOptions(gson.fromJson(article.getTitleOptions(),
                 new TypeToken<List<TitleOption>>(){}));
-        }*/
+        }
         if (article.getOutline() != null) {
             articleVO.setOutline(gson.fromJson((String) article.getOutline(),
                 new TypeToken<List<OutlineItem>>(){}));
