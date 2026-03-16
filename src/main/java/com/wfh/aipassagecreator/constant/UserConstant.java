@@ -30,5 +30,17 @@ public interface UserConstant {
      */
     String BAN_ROLE = "ban";
 
+
+    /**
+     * VIP 角色
+     */
+    String VIP_ROLE = "vip";
+
+    /**
+     * 普通用户默认配额
+     */
+    int DEFAULT_QUOTA = 5;
+
+
     // endregion
 }

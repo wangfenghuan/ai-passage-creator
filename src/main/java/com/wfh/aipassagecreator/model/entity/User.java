@@ -37,6 +37,12 @@ public class User implements UserDetails {
     private String userAccount;
 
     /**
+     * 剩余配额
+     */
+    private Integer quota;
+
+
+    /**
      * 用户密码
      */
     private String userPassWord;
@@ -76,6 +82,12 @@ public class User implements UserDetails {
      * 创建时间
      */
     private Date editTime;
+
+    /**
+     * 成为会员时间
+     */
+    private Date vipTime;
+
 
     /**
      * 是否删除

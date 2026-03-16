@@ -12,6 +12,7 @@ import com.wfh.aipassagecreator.model.entity.User;
 */
 public interface UserMapper extends BaseMapper<User> {
 
+    int decrementQuota(Long id);
 }
 
 

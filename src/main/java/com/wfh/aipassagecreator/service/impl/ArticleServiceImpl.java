@@ -7,7 +7,6 @@ import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.wfh.aipassagecreator.common.ErrorCode;
-import com.wfh.aipassagecreator.constant.UserConstant;
 import com.wfh.aipassagecreator.exception.BusinessException;
 import com.wfh.aipassagecreator.exception.ThrowUtils;
 import com.wfh.aipassagecreator.model.dto.article.ArticleQueryRequest;
@@ -16,20 +15,20 @@ import com.wfh.aipassagecreator.model.entity.Article;
 import com.wfh.aipassagecreator.model.entity.User;
 import com.wfh.aipassagecreator.model.enums.ArticlePhaseEnum;
 import com.wfh.aipassagecreator.model.enums.ArticleStatusEnum;
+import com.wfh.aipassagecreator.model.enums.ImageMethodEnum;
 import com.wfh.aipassagecreator.model.vo.ArticleVO;
 import com.wfh.aipassagecreator.service.ArticleAgentService;
 import com.wfh.aipassagecreator.service.ArticleService;
 import com.wfh.aipassagecreator.mapper.ArticleMapper;
 import com.wfh.aipassagecreator.service.UserService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.wfh.aipassagecreator.constant.UserConstant.ADMIN_ROLE;
+import static com.wfh.aipassagecreator.constant.UserConstant.VIP_ROLE;
 
 /**
 * @author fenghuanwang
@@ -52,7 +51,12 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article>
     }
 
     @Override
-    public String createArticleTask(String topic, User loginUser, String style) {
+    public String createArticleTask(String topic, User loginUser, List<String> enabledImageMethods, String style) {
+        // 处理配图方式：如果用户未选择，给普通用户设置默认的非 VIP 方式
+        List<String> finalImageMethods = processImageMethods(enabledImageMethods, loginUser);
+
+        // 校验配图方式权限（普通用户不能使用 NANO_BANANA 和 SVG_DIAGRAM）
+        validateImageMethods(finalImageMethods, loginUser);
         // 生成任务ID
         String taskId = IdUtil.simpleUUID();
 
@@ -68,6 +72,50 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article>
 
         log.info("文章任务已创建, taskId={}, userId={}", taskId, loginUser.getId());
         return taskId;
+    }
+
+    private void validateImageMethods(List<String> enabledImageMethods, User loginUser) {
+        if (enabledImageMethods == null || enabledImageMethods.isEmpty()) {
+            return;
+        }
+
+        // VIP 和管理员无限制
+        if (isVipOrAdmin(loginUser)) {
+            return;
+        }
+
+        // 普通用户限制
+        for (String method : enabledImageMethods) {
+            if (ImageMethodEnum.NANO_BANANA.getValue().equals(method) ||
+                    ImageMethodEnum.SVG_DIAGRAM.getValue().equals(method)) {
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR,
+                        "高级配图功能（AI 生图、SVG 图表）仅限 VIP 会员使用");
+            }
+        }
+    }
+
+    private List<String> processImageMethods(List<String> enabledImageMethods, User loginUser) {
+        if (enabledImageMethods != null && !enabledImageMethods.isEmpty()) {
+            return enabledImageMethods;
+        }
+
+        // VIP 和管理员：不限制，返回 null 表示支持所有方式
+        if (isVipOrAdmin(loginUser)) {
+            return null;
+        }
+
+        // 普通用户：返回默认的非 VIP 方式
+        return List.of(
+                ImageMethodEnum.PEXELS.getValue(),
+                ImageMethodEnum.MERMAID.getValue(),
+                ImageMethodEnum.ICONIFY.getValue(),
+                ImageMethodEnum.EMOJI_PACK.getValue()
+        );
+    }
+
+    private boolean isVipOrAdmin(User user) {
+        return ADMIN_ROLE.equals(user.getUserRole()) ||
+                VIP_ROLE.equals(user.getUserRole());
     }
 
     @Override
@@ -274,15 +322,15 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article>
     public List<ArticleState.OutlineSection> aiModifyOutline(String taskId, String modifySuggestion, User loginUser) {
         Article article = getByTaskId(taskId);
         ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "文章不存在");
-
+        // 校验 VIP 权限（普通用户不能使用 AI 修改大纲）
+        ThrowUtils.throwIf(!isVipOrAdmin(loginUser), ErrorCode.NO_AUTH_ERROR,
+                "AI 修改大纲功能仅限 VIP 会员使用");
         // 校验权限
         checkArticlePermission(article, loginUser);
-
         // 校验当前阶段（必须是 OUTLINE_EDITING）
         ArticlePhaseEnum currentPhase = ArticlePhaseEnum.getByValue(article.getPhase());
         ThrowUtils.throwIf(currentPhase != ArticlePhaseEnum.OUTLINE_EDITING,
                 ErrorCode.OPERATION_ERROR, "当前阶段不允许此操作");
-
         // 获取当前大纲
         List<ArticleState.OutlineSection> currentOutline = gson.fromJson(
                 article.getOutline(),

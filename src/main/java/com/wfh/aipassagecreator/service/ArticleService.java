@@ -19,7 +19,7 @@ import java.util.List;
 */
 public interface ArticleService extends IService<Article> {
 
-    String createArticleTask(String topic, User loginUser, String style);
+    String createArticleTask(String topic, User loginUser, List<String> enabledImageMethods, String style);
 
     Article getByTaskId(String taskId);
 

@@ -55,11 +55,12 @@ public class ArticleController {
                 ErrorCode.PARAMS_ERROR, "无效的文章风格");
 
         User loginUser = userService.getLoginUser(httpRequest);
-
+        List<String> enabledImageMethods = request.getEnabledImageMethods();
         // 创建任务（包含风格参数）
         String taskId = articleService.createArticleTask(
                 request.getTopic(),
                 loginUser,
+                enabledImageMethods,
                 request.getStyle()
                 );
 

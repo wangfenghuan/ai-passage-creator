@@ -50,3 +50,16 @@ rustfs:
     access-key: drawio # 访问密钥
     acess-secret: 12345678 # 密钥密码
     bucket-name: drawio # 创建的桶名称
+
+pexels:
+  api-key: z9uORfoXTYlk3n4aeec4QbHdwVpbL7IrcyXglZ2MUVg8ZTK8UadupXii
+
+nano-banana:
+  api-key: AIzaSyCbKLpafjOBw_ruzRduwWiu4gM1ibhkwgQ
+
+# Stripe 支付配置（测试模式）
+stripe:
+  api-key: sk_test_your_stripe_secret_key  # 请在 https://dashboard.stripe.com/test/apikeys 获取
+  webhook-secret: whsec_your_webhook_secret  # Webhook 签名密钥
+  success-url: http://localhost:5173/vip?success=true  # 支付成功回调 URL
+  cancel-url: http://localhost:5173/vip?cancelled=true  # 支付取消回调 URL
