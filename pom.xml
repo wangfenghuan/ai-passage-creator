@@ -139,6 +139,12 @@
             <artifactId>stripe-java</artifactId>
             <version>31.2.0</version>
         </dependency>
+        <!-- Spring AI Alibaba Agent Framework -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+            <version>1.1.2.1</version>
+        </dependency>
 
     </dependencies>
 
