@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import com.wfh.aipassagecreator.annotation.AgentExecution;
 import com.wfh.aipassagecreator.constant.PromptConstant;
 import com.wfh.aipassagecreator.model.dto.article.ArticleState;
 import com.wfh.aipassagecreator.model.dto.image.ImageRequest;
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -48,6 +50,7 @@ public class ArticleAgentService {
     /**
      * 智能体1：生成标题方案（3-5个）
      */
+    @AgentExecution(value = "agent1_generate_titles", description = "生成标题方案")
     private void agent1GenTitle(ArticleState state) {
         String prompt = PromptConstant.AGENT1_TITLE_PROMPT
                 .replace("{topic}", state.getTopic())
@@ -69,6 +72,7 @@ public class ArticleAgentService {
      * @param state
      * @param stramHandler
      */
+    @AgentExecution(value = "agent2_generate_outline", description = "生成文章大纲")
     private void agent2GenOutline(ArticleState state, Consumer<String> stramHandler){
         String prompt = PromptConstant.AGENT2_OUTLINE_PROMPT
                 .replace("{mainTitle}", state.getTitle().getMainTitle())
@@ -85,6 +89,7 @@ public class ArticleAgentService {
      * @param state
      * @param streamHandler
      */
+    @AgentExecution(value = "agent3_generate_content", description = "生成文章正文")
     private void agent3GenContent(ArticleState state, Consumer<String> streamHandler){
         // 构建 prompt，根据是否有用户补充描述插入对应部分
         String descriptionSection = "";
@@ -109,6 +114,7 @@ public class ArticleAgentService {
      * 智能体4分析配图需求
      * @param state
      */
+    @AgentExecution(value = "agent4_analyze_image_requirements", description = "分析配图需求")
     private void agent4AnalyzeImageRequirements(ArticleState state) {
         // 构建可用配图方式说明
         String availableMethods = buildAvailableMethodsDescription(state.getEnabledImageMethods());
@@ -141,6 +147,7 @@ public class ArticleAgentService {
     /**
      * 智能体5：生成配图（串行执行，支持混用多种配图方式，统一上传到 COS）
      */
+    @AgentExecution(value = "agent5_generate_images", description = "生成配图")
     private void agent5GenImages(ArticleState state, Consumer<String> streamHandler) {
         List<ArticleState.ImageResult> imageResults = new ArrayList<>();
 
@@ -183,6 +190,7 @@ public class ArticleAgentService {
     /**
      * 图文合成：将配图插入正文对应位置
      */
+    @AgentExecution(value = "agent6_merge_content", description = "图文合成")
     private void mergeImagesIntoContent(ArticleState state) {
         String content = state.getContent();
         List<ArticleState.ImageResult> images = state.getImages();
@@ -400,7 +408,8 @@ public class ArticleAgentService {
         try {
             // 智能体1：生成标题方案
             log.info("阶段1：开始生成标题方案, taskId={}", state.getTaskId());
-            agent1GenTitle(state);
+            // 通过代理调用
+            getProxy().agent1GenTitle(state);
             streamHandler.accept(SseMessageTypeEnum.AGENT1_COMPLETE.getValue());
             log.info("阶段1：标题方案生成完成, taskId={}, optionsCount={}",
                     state.getTaskId(), state.getTitleOptions().size());
@@ -437,19 +446,20 @@ public class ArticleAgentService {
      */
     public void executePhase3_GenerateContent(ArticleState state, Consumer<String> streamHandler) {
         try {
+            ArticleAgentService proxy = getProxy();
             // 智能体3：生成正文（流式输出）
             log.info("阶段3：开始生成正文, taskId={}", state.getTaskId());
-            agent3GenContent(state, streamHandler);
+            proxy.agent3GenContent(state, streamHandler);
             streamHandler.accept(SseMessageTypeEnum.AGENT3_COMPLETE.getValue());
 
             // 智能体4：分析配图需求
             log.info("阶段3：开始分析配图需求, taskId={}", state.getTaskId());
-            agent4AnalyzeImageRequirements(state);
+            proxy.agent4AnalyzeImageRequirements(state);
             streamHandler.accept(SseMessageTypeEnum.AGENT4_COMPLETE.getValue());
 
             // 智能体5：生成配图
             log.info("阶段3：开始生成配图, taskId={}", state.getTaskId());
-            agent5GenImages(state, streamHandler);
+            proxy.agent5GenImages(state, streamHandler);
             streamHandler.accept(SseMessageTypeEnum.AGENT5_COMPLETE.getValue());
 
             // 图文合成：将配图插入正文
@@ -473,6 +483,7 @@ public class ArticleAgentService {
      * @param modifySuggestion 用户修改建议
      * @return 修改后的大纲
      */
+    @AgentExecution(value = "ai_modify_outline", description = "AI修改大纲")
     public List<ArticleState.OutlineSection> aiModifyOutline(String mainTitle, String subTitle,
                                                              List<ArticleState.OutlineSection> currentOutline,
                                                              String modifySuggestion) {
@@ -490,6 +501,21 @@ public class ArticleAgentService {
         log.info("AI修改大纲成功, sectionsCount={}", outlineResult.getSections().size());
         return outlineResult.getSections();
     }
+
+    /**
+     * 获取当前类的代理对象
+     * 用于解决 Spring AOP 同类方法调用代理失效问题
+     */
+    private ArticleAgentService getProxy() {
+        try {
+            return (ArticleAgentService) AopContext.currentProxy();
+        } catch (IllegalStateException e) {
+            // 如果获取代理失败，返回 this（降级处理）
+            log.warn("获取 AOP 代理对象失败，使用原始对象: {}", e.getMessage());
+            return this;
+        }
+    }
+
 
 
 }
