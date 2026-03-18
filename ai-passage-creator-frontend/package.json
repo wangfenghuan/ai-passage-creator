@@ -1,0 +1,34 @@
+{
+  "name": "ai-passage-creator-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "generate:api": "curl -s http://127.0.0.1:8567/api/v3/api-docs > openapi.json && openapi --input openapi.json --output src/api --client axios"
+  },
+  "dependencies": {
+    "@ant-design/cssinjs": "^2.1.2",
+    "@ant-design/icons": "^6.1.0",
+    "@ant-design/nextjs-registry": "^1.3.0",
+    "antd": "^6.3.3",
+    "axios": "^1.13.6",
+    "next": "16.1.7",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.7",
+    "openapi-typescript-codegen": "^0.30.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
